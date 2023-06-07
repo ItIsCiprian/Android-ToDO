@@ -1,2 +1,3 @@
 # Android-ToDO
-v
+
+Creating a full-fledged Android app as a simlified ToDO.
