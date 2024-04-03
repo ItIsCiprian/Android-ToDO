@@ -1,7 +1,7 @@
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
-import androidx.appcompat.app.AppCompatActivity; // Use androidx library for compatibility
+import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
@@ -12,78 +12,88 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * MainActivity class for managing a list of tasks.
- * Allows users to add, remove, and toggle the completion status of tasks.
+ * Manages a list of tasks, allowing users to add, remove, and mark tasks as completed.
+ * Tasks are persisted between sessions using SharedPreferences.
  */
 public class MainActivity extends AppCompatActivity {
 
-    private ArrayList<TaskItem> tasksList; // Stores the tasks
-    private TaskAdapter tasksAdapter; // Bridges the tasks list with the ListView UI
-    private EditText editTextTask; // Input for new tasks
-    private ListView listViewTasks; // Displays the tasks
-    private SharedPreferences sharedPreferences; // For persisting task data
+    // UI Components
+    private EditText editTextTask; // Input field for new tasks
+    private ListView listViewTasks; // Displays the list of tasks
+
+    // Data
+    private ArrayList<TaskItem> tasksList = new ArrayList<>(); // Stores tasks in memory
+    private TaskAdapter tasksAdapter; // Adapter to bridge the tasksList and listViewTasks
+    private SharedPreferences sharedPreferences; // For persistent storage of tasks
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initUI(); // Initialize the UI components
-        initListeners(); // Setup listeners for task interactions
-        loadTasksFromSharedPreferences(); // Load saved tasks
+        // Initialization steps
+        initializeUserInterface();
+        initializeEventListeners();
+        loadTasks();
     }
 
     /**
-     * Initializes UI components and shared preferences.
+     * Initializes UI components and binds data to the ListView.
      */
-    private void initUI() {
+    private void initializeUserInterface() {
+        // Setup SharedPreferences for task persistence
         sharedPreferences = getSharedPreferences("tasks", Context.MODE_PRIVATE);
+        
+        // Initialize UI components
         editTextTask = findViewById(R.id.editTextTask);
         listViewTasks = findViewById(R.id.listViewTasks);
-        tasksList = new ArrayList<>();
+        
+        // Setup adapter and bind it to the ListView
         tasksAdapter = new TaskAdapter(this, tasksList);
         listViewTasks.setAdapter(tasksAdapter);
     }
 
     /**
-     * Sets up listeners for adding, removing, and toggling tasks.
+     * Sets up event listeners for UI interactions.
      */
-    private void initListeners() {
+    private void initializeEventListeners() {
+        // Toggle task completion on item click
         listViewTasks.setOnItemClickListener((parent, view, position, id) -> {
-            // Toggle the completion status of the clicked task
             TaskItem task = tasksList.get(position);
             task.setCompleted(!task.isCompleted());
             tasksAdapter.notifyDataSetChanged();
-            saveTasksToSharedPreferences();
+            saveTasks();
         });
 
+        // Remove task on long item click
         listViewTasks.setOnItemLongClickListener((parent, view, position, id) -> {
-            // Remove the long-clicked task from the list
             tasksList.remove(position);
             tasksAdapter.notifyDataSetChanged();
-            saveTasksToSharedPreferences();
-            return true;
+            saveTasks();
+            return true; // Indicate the click was handled
         });
     }
 
     /**
-     * Adds a new task to the list when the add button is clicked.
-     * @param view The view that was clicked.
+     * Adds a new task based on the input field's content when the add button is clicked.
+     * Clears the input field after adding the task.
+     * 
+     * @param view The view that was clicked (the add button).
      */
     public void addTask(View view) {
         String taskName = editTextTask.getText().toString().trim();
         if (!taskName.isEmpty()) {
             tasksList.add(new TaskItem(taskName, false));
             tasksAdapter.notifyDataSetChanged();
-            editTextTask.setText(""); // Clear the input field
-            saveTasksToSharedPreferences();
+            editTextTask.setText(""); // Clear input field
+            saveTasks();
         }
     }
 
     /**
-     * Saves the current list of tasks to SharedPreferences.
+     * Persists the current list of tasks to SharedPreferences.
      */
-    private void saveTasksToSharedPreferences() {
+    private void saveTasks() {
         Set<String> taskSet = new HashSet<>();
         for (TaskItem task : tasksList) {
             taskSet.add(task.getName() + ":" + task.isCompleted());
@@ -92,11 +102,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * Loads tasks from SharedPreferences and populates the task list.
+     * Loads tasks from SharedPreferences into the task list.
      */
-    private void loadTasksFromSharedPreferences() {
+    private void loadTasks() {
         Set<String> taskSet = sharedPreferences.getStringSet("tasks", new HashSet<>());
-        tasksList.clear(); // Clear existing tasks to prevent duplicates
+        tasksList.clear(); // Prevent duplicate tasks
         for (String taskString : taskSet) {
             String[] parts = taskString.split(":");
             if (parts.length == 2) {
