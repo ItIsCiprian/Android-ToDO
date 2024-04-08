@@ -12,105 +12,103 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Manages a list of tasks, allowing users to add, remove, and mark tasks as completed.
- * Tasks are persisted between sessions using SharedPreferences.
+ * MainActivity that manages a list of tasks, enabling users to add, remove, and toggle the completion status of tasks.
+ * It utilizes SharedPreferences to persist tasks between sessions, ensuring that user data is retained across app launches.
  */
 public class MainActivity extends AppCompatActivity {
 
     // UI Components
-    private EditText editTextTask; // Input field for new tasks
-    private ListView listViewTasks; // Displays the list of tasks
+    private EditText editTextTask; // EditText for entering new tasks.
+    private ListView listViewTasks; // ListView to display tasks.
 
-    // Data
-    private ArrayList<TaskItem> tasksList = new ArrayList<>(); // Stores tasks in memory
-    private TaskAdapter tasksAdapter; // Adapter to bridge the tasksList and listViewTasks
-    private SharedPreferences sharedPreferences; // For persistent storage of tasks
+    // Adapter and Data
+    private ArrayList<TaskItem> tasksList = new ArrayList<>(); // Holds task items.
+    private TaskAdapter tasksAdapter; // Adapter to connect tasksList with listViewTasks.
+
+    // SharedPreferences for persisting tasks
+    private SharedPreferences sharedPreferences; // Storage for tasks.
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Initialization steps
-        initializeUserInterface();
-        initializeEventListeners();
-        loadTasks();
+        // Initialize UI components and setup
+        initUI();
+        setupListeners();
+        loadTasksFromPreferences();
     }
 
     /**
-     * Initializes UI components and binds data to the ListView.
+     * Initializes UI components and sets up the task adapter for the ListView.
      */
-    private void initializeUserInterface() {
-        // Setup SharedPreferences for task persistence
+    private void initUI() {
         sharedPreferences = getSharedPreferences("tasks", Context.MODE_PRIVATE);
         
-        // Initialize UI components
         editTextTask = findViewById(R.id.editTextTask);
         listViewTasks = findViewById(R.id.listViewTasks);
-        
-        // Setup adapter and bind it to the ListView
+
         tasksAdapter = new TaskAdapter(this, tasksList);
         listViewTasks.setAdapter(tasksAdapter);
     }
 
     /**
-     * Sets up event listeners for UI interactions.
+     * Configures event listeners for user interactions with the task list.
      */
-    private void initializeEventListeners() {
-        // Toggle task completion on item click
+    private void setupListeners() {
+        // Mark task as completed/not completed on item click.
         listViewTasks.setOnItemClickListener((parent, view, position, id) -> {
             TaskItem task = tasksList.get(position);
-            task.setCompleted(!task.isCompleted());
+            task.toggleCompleted();
             tasksAdapter.notifyDataSetChanged();
-            saveTasks();
+            saveTasksToPreferences();
         });
 
-        // Remove task on long item click
+        // Remove task on long press.
         listViewTasks.setOnItemLongClickListener((parent, view, position, id) -> {
             tasksList.remove(position);
             tasksAdapter.notifyDataSetChanged();
-            saveTasks();
-            return true; // Indicate the click was handled
+            saveTasksToPreferences();
+            return true; // Event consumed.
         });
     }
 
     /**
-     * Adds a new task based on the input field's content when the add button is clicked.
-     * Clears the input field after adding the task.
-     * 
-     * @param view The view that was clicked (the add button).
+     * Adds a new task from the EditText to the task list, then saves and refreshes the list.
+     * @param view The view that triggered this method (add button).
      */
-    public void addTask(View view) {
+    public void onAddTaskClicked(View view) {
         String taskName = editTextTask.getText().toString().trim();
         if (!taskName.isEmpty()) {
-            tasksList.add(new TaskItem(taskName, false));
+            TaskItem newTask = new TaskItem(taskName, false);
+            tasksList.add(newTask);
             tasksAdapter.notifyDataSetChanged();
-            editTextTask.setText(""); // Clear input field
-            saveTasks();
+            editTextTask.setText(""); // Clear the input field after adding.
+            saveTasksToPreferences();
         }
     }
 
     /**
-     * Persists the current list of tasks to SharedPreferences.
+     * Saves the current tasks to SharedPreferences.
      */
-    private void saveTasks() {
-        Set<String> taskSet = new HashSet<>();
+    private void saveTasksToPreferences() {
+        Set<String> tasksSet = new HashSet<>();
         for (TaskItem task : tasksList) {
-            taskSet.add(task.getName() + ":" + task.isCompleted());
+            tasksSet.add(task.serialize());
         }
-        sharedPreferences.edit().putStringSet("tasks", taskSet).apply();
+        sharedPreferences.edit().putStringSet("tasks", tasksSet).apply();
     }
 
     /**
-     * Loads tasks from SharedPreferences into the task list.
+     * Loads tasks from SharedPreferences into the tasks list.
      */
-    private void loadTasks() {
-        Set<String> taskSet = sharedPreferences.getStringSet("tasks", new HashSet<>());
-        tasksList.clear(); // Prevent duplicate tasks
-        for (String taskString : taskSet) {
-            String[] parts = taskString.split(":");
-            if (parts.length == 2) {
-                tasksList.add(new TaskItem(parts[0], Boolean.parseBoolean(parts[1])));
+    private void loadTasksFromPreferences() {
+        Set<String> tasksSet = sharedPreferences.getStringSet("tasks", new HashSet<>());
+        tasksList.clear(); // Clear existing data to avoid duplicates.
+        for (String serializedTask : tasksSet) {
+            TaskItem task = TaskItem.deserialize(serializedTask);
+            if (task != null) {
+                tasksList.add(task);
             }
         }
         tasksAdapter.notifyDataSetChanged();
