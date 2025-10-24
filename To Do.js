@@ -1,115 +1,115 @@
+// MainActivity.java
+package your.package;
+
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.os.Bundle;
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.EditText;
 import android.widget.ListView;
+import android.widget.Toast;
+
+import org.json.JSONArray;
+import org.json.JSONException;
 
 import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * MainActivity manages a list of tasks with features to add, remove, and toggle completion status.
- * It uses SharedPreferences to persist tasks across app launches.
+ * Tasks are persisted as a JSON array string in SharedPreferences to preserve order.
  */
 public class MainActivity extends AppCompatActivity {
 
-    private EditText editTextTask; // Input field for new tasks.
-    private ListView listViewTasks; // Displays tasks.
+    private static final String PREFS_NAME = "tasks_prefs";
+    private static final String KEY_TASKS_JSON = "tasks_json";
 
-    private ArrayList<TaskItem> tasksList = new ArrayList<>(); // List of tasks.
-    private TaskAdapter tasksAdapter; // Adapter to link tasksList with listViewTasks.
+    private EditText editTextTask;
+    private ListView listViewTasks;
 
-    private SharedPreferences sharedPreferences; // SharedPreferences to store tasks persistently.
+    private final ArrayList<TaskItem> tasksList = new ArrayList<>();
+    private TaskAdapter tasksAdapter;
+
+    private SharedPreferences prefs;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        initializeComponents();
-        configureEventListeners();
-        loadTasks();
-    }
+        prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
-    /**
-     * Initializes the UI components and sets up the adapter for the ListView.
-     */
-    private void initializeComponents() {
-        sharedPreferences = getSharedPreferences("tasks", Context.MODE_PRIVATE);
-        
         editTextTask = findViewById(R.id.editTextTask);
         listViewTasks = findViewById(R.id.listViewTasks);
 
         tasksAdapter = new TaskAdapter(this, tasksList);
         listViewTasks.setAdapter(tasksAdapter);
+
+        listViewTasks.setOnItemClickListener(this::onToggleTask);
+        listViewTasks.setOnItemLongClickListener(this::onRemoveTask);
+
+        loadTasks();
     }
 
-    /**
-     * Sets up event listeners for UI interactions.
-     */
-    private void configureEventListeners() {
-        listViewTasks.setOnItemClickListener(this::toggleTaskCompletion);
-        listViewTasks.setOnItemLongClickListener(this::removeTask);
+    /** Add new task from EditText. Hook this to your button's onClick. */
+    public void onAddTaskClicked(View view) {
+        final String raw = editTextTask.getText().toString();
+        final String taskName = raw == null ? "" : raw.trim();
+        if (taskName.isEmpty()) {
+            Toast.makeText(this, "Please enter a task", Toast.LENGTH_SHORT).show();
+            return;
+        }
+        tasksList.add(new TaskItem(taskName, false));
+        tasksAdapter.notifyDataSetChanged();
+        editTextTask.setText("");
+        saveTasks();
     }
 
-    /**
-     * Toggles the completion status of the task when an item is clicked.
-     */
-    private void toggleTaskCompletion(AdapterView<?> parent, View view, int position, long id) {
+    /** Toggle completion on tap. */
+    private void onToggleTask(AdapterView<?> parent, View item, int position, long id) {
         TaskItem task = tasksList.get(position);
         task.toggleCompleted();
         tasksAdapter.notifyDataSetChanged();
         saveTasks();
     }
 
-    /**
-     * Removes a task from the list on a long press.
-     */
-    private boolean removeTask(AdapterView<?> parent, View view, int position, long id) {
+    /** Remove on long-press. */
+    private boolean onRemoveTask(AdapterView<?> parent, View view, int position, long id) {
         tasksList.remove(position);
         tasksAdapter.notifyDataSetChanged();
         saveTasks();
-        return true; // Indicates the event was handled.
+        return true;
     }
 
-    /**
-     * Adds a new task from the EditText into the tasks list.
-     */
-    public void onAddTaskClicked(View view) {
-        String taskName = editTextTask.getText().toString().trim();
-        if (!taskName.isEmpty()) {
-            tasksList.add(new TaskItem(taskName, false));
-            tasksAdapter.notifyDataSetChanged();
-            editTextTask.setText(""); // Clears the input field.
-            saveTasks();
-        }
-    }
-
-    /**
-     * Saves the current list of tasks to SharedPreferences.
-     */
+    /** Persist list as JSON array string (preserves order). */
     private void saveTasks() {
-        Set<String> tasksSet = new HashSet<>();
-        for (TaskItem task : tasksList) {
-            tasksSet.add(task.serialize());
+        JSONArray arr = new JSONArray();
+        for (TaskItem t : tasksList) {
+            arr.put(t.serialize()); // your existing format
         }
-        sharedPreferences.edit().putStringSet("tasks", tasksSet).apply();
+        prefs.edit().putString(KEY_TASKS_JSON, arr.toString()).apply();
     }
 
-    /**
-     * Loads tasks from SharedPreferences into the task list.
-     */
+    /** Load list from JSON array string. */
     private void loadTasks() {
-        Set<String> storedTasks = sharedPreferences.getStringSet("tasks", new HashSet<>());
         tasksList.clear();
-        for (String serializedTask : storedTasks) {
-            TaskItem task = TaskItem.deserialize(serializedTask);
-            tasksList.add(task);
+        String json = prefs.getString(KEY_TASKS_JSON, "[]");
+        try {
+            JSONArray arr = new JSONArray(json);
+            for (int i = 0; i < arr.length(); i++) {
+                String serialized = arr.optString(i, null);
+                if (serialized != null) {
+                    TaskItem t = TaskItem.deserialize(serialized);
+                    if (t != null) tasksList.add(t);
+                }
+            }
+        } catch (JSONException e) {
+            // If corrupt, reset
+            prefs.edit().remove(KEY_TASKS_JSON).apply();
         }
         tasksAdapter.notifyDataSetChanged();
     }
 }
+
