@@ -1,155 +1,172 @@
+// main.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const TodoApp());
-}
+void main() => runApp(const TodoApp());
 
 class TodoApp extends StatelessWidget {
   const TodoApp({super.key});
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Flutter ToDo App',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+      title: 'Flutter ToDo',
+      theme: ThemeData(useMaterial3: true, colorSchemeSeed: Colors.blue),
       home: const TodoListScreen(),
     );
   }
 }
 
+class TodoItem {
+  final String id;
+  final String title;
+  final bool completed;
+
+  const TodoItem({required this.id, required this.title, this.completed = false});
+
+  TodoItem copyWith({String? id, String? title, bool? completed}) => TodoItem(
+        id: id ?? this.id,
+        title: title ?? this.title,
+        completed: completed ?? this.completed,
+      );
+
+  Map<String, dynamic> toMap() => {'id': id, 'title': title, 'completed': completed};
+  factory TodoItem.fromMap(Map<String, dynamic> m) =>
+      TodoItem(id: m['id'] as String, title: m['title'] as String, completed: m['completed'] as bool);
+}
+
+class TodoStorage {
+  static const _key = 'todoList_v2';
+
+  Future<List<TodoItem>> load() async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = prefs.getStringList(_key) ?? <String>[];
+    return raw
+        .map((s) => Map<String, dynamic>.from(json.decode(s)))
+        .map(TodoItem.fromMap)
+        .toList(growable: false);
+  }
+
+  Future<void> save(List<TodoItem> items) async {
+    final prefs = await SharedPreferences.getInstance();
+    final raw = items.map((e) => json.encode(e.toMap())).toList(growable: false);
+    await prefs.setStringList(_key, raw);
+  }
+}
+
 class TodoListScreen extends StatefulWidget {
   const TodoListScreen({super.key});
-
   @override
-  _TodoListScreenState createState() => _TodoListScreenState();
+  State<TodoListScreen> createState() => _TodoListScreenState();
 }
 
 class _TodoListScreenState extends State<TodoListScreen> {
-  final List<Map<String, dynamic>> _todoList = [];
-  late SharedPreferences _prefs;
+  final _items = <TodoItem>[];
+  final _storage = TodoStorage();
 
   @override
   void initState() {
     super.initState();
-    _loadTodoItems();
+    _init();
   }
 
-  Future<void> _loadTodoItems() async {
-    _prefs = await SharedPreferences.getInstance();
-    List<String> todoListString = _prefs.getStringList('todoList') ?? [];
+  Future<void> _init() async {
+    final loaded = await _storage.load();
     setState(() {
-      _todoList.clear();
-      for (String item in todoListString) {
-        _todoList.add(Map<String, dynamic>.from(json.decode(item)));
-      }
+      _items
+        ..clear()
+        ..addAll(loaded);
     });
   }
 
-  Future<void> _saveTodoItems() async {
-    List<String> todoListString = [];
-    for (Map<String, dynamic> item in _todoList) {
-      todoListString.add(json.encode(item));
-    }
-    await _prefs.setStringList('todoList', todoListString);
-  }
+  Future<void> _persist() => _storage.save(_items);
 
-  void _addTodoItem(String title) {
+  Future<void> _add(String title) async {
+    final t = title.trim();
+    if (t.isEmpty) return;
     setState(() {
-      _todoList.add({'title': title, 'completed': false});
+      _items.add(TodoItem(
+        id: DateTime.now().microsecondsSinceEpoch.toString(),
+        title: t,
+      ));
     });
-    _saveTodoItems();
+    await _persist();
   }
 
-  void _toggleTodoCompletion(int index) {
+  Future<void> _toggle(int index) async {
     setState(() {
-      _todoList[index]['completed'] = !_todoList[index]['completed'];
+      _items[index] = _items[index].copyWith(completed: !_items[index].completed);
     });
-    _saveTodoItems();
+    await _persist();
   }
 
-  void _removeTodoItem(int index) {
+  Future<void> _removeAt(int index) async {
     setState(() {
-      _todoList.removeAt(index);
+      _items.removeAt(index);
     });
-    _saveTodoItems();
+    await _persist();
   }
 
-  void _showAddTodoDialog() {
+  void _showAddDialog() {
+    final ctrl = TextEditingController();
     showDialog(
       context: context,
-      builder: (BuildContext context) {
-        String newTodo = "";
-        return AlertDialog(
-          title: const Text('Add a new ToDo'),
-          content: SingleChildScrollView(
-            child: ListBody(
-              children: <Widget>[
-                TextField(
-                  autofocus: true,
-                  onChanged: (value) {
-                    newTodo = value;
-                  },
-                ),
-              ],
-            ),
+      builder: (context) => AlertDialog(
+        title: const Text('Add a new ToDo'),
+        content: TextField(
+          controller: ctrl,
+          autofocus: true,
+          onSubmitted: (_) {
+            Navigator.of(context).pop();
+            _add(ctrl.text);
+          },
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(), child: const Text('Cancel')),
+          FilledButton(
+            onPressed: () {
+              Navigator.of(context).pop();
+              _add(ctrl.text);
+            },
+            child: const Text('Add'),
           ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Cancel'),
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-            ),
-            TextButton(
-              child: const Text('Add'),
-              onPressed: () {
-                _addTodoItem(newTodo);
-                Navigator.of(context).pop();
-              },
-            ),
-          ],
-        );
-      },
+        ],
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final hasItems = _items.isNotEmpty;
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('ToDo List'),
-      ),
-      body: ListView.builder(
-        itemCount: _todoList.length,
-        itemBuilder: (context, index) {
-          return Dismissible(
-            key: Key(_todoList[index]['title']),
-            onDismissed: (direction) {
-              _removeTodoItem(index);
-            },
-            background: Container(color: Colors.red),
-            child: ListTile(
-              title: Text(
-                _todoList[index]['title'],
-                style: TextStyle(
-                  decoration: _todoList[index]['completed']
-                      ? TextDecoration.lineThrough
-                      : null,
-                ),
-              ),
-              onTap: () {
-                _toggleTodoCompletion(index);
+      appBar: AppBar(title: const Text('ToDo List')),
+      body: hasItems
+          ? ListView.separated(
+              itemCount: _items.length,
+              separatorBuilder: (_, __) => const Divider(height: 1),
+              itemBuilder: (context, index) {
+                final item = _items[index];
+                return Dismissible(
+                  key: ValueKey(item.id),
+                  background: Container(color: Colors.red),
+                  onDismissed: (_) => _removeAt(index),
+                  child: CheckboxListTile(
+                    value: item.completed,
+                    onChanged: (_) => _toggle(index),
+                    title: Text(
+                      item.title,
+                      style: TextStyle(
+                        decoration: item.completed ? TextDecoration.lineThrough : TextDecoration.none,
+                        color: item.completed ? Colors.grey : null,
+                      ),
+                    ),
+                  ),
+                );
               },
-            ),
-          );
-        },
-      ),
+            )
+          : const Center(child: Text('No items yet. Tap + to add one.')),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTodoDialog,
+        onPressed: _showAddDialog,
         tooltip: 'Add ToDo',
         child: const Icon(Icons.add),
       ),
