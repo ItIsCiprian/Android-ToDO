@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Modern color palette inspired by Todoist/Things 3 -->
+    <color name="primary">#E44234</color>
+    <color name="primary_variant">#D32F2F</color>
+    <color name="secondary">#1976D2</color>
+    <color name="secondary_variant">#1565C0</color>
+    <color name="background">#FAFAFA</color>
+    <color name="surface">#FFFFFF</color>
+    <color name="error">#F44336</color>
+    <color name="on_primary">#FFFFFF</color>
+    <color name="on_secondary">#FFFFFF</color>
+    <color name="on_background">#212121</color>
+    <color name="on_surface">#212121</color>
+    <color name="on_error">#FFFFFF</color>
+    
+    <!-- Task specific colors -->
+    <color name="task_completed_bg">#E8F5E8</color>
+    <color name="task_completed_text">#757575</color>
+    <color name="task_priority_high">#FF5252</color>
+    <color name="task_priority_medium">#FFC107</color>
+    <color name="task_priority_low">#4CAF50</color>
+    
+    <!-- Subtle borders and dividers -->
+    <color name="divider">#E0E0E0</color>
+    <color name="border">#EEEEEE</color>
+    
+    <!-- Floating action button -->
+    <color name="fab_background">#E44234</color>
+    <color name="fab_shadow">#40000000</color>
+</resources>

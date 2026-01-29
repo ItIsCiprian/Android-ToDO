@@ -1,8 +1,11 @@
 <resources>
-    <string name="app_name">Todo App</string>
+    <string name="app_name">Modern Todo</string>
     <string name="add_task">Add Task</string>
-    <string name="enter_task_hint">Enter a new task</string>
-    <string name="task_list_title">Todo List</string>
+    <string name="enter_task_hint">What needs to be done?</string>
+    <string name="task_list_title">My Tasks</string>
     <string name="instructions">Tap to complete • Long press to delete</string>
     <string name="empty_task_message">Please enter a task</string>
+    <string name="no_tasks">No tasks yet. Add one above!</string>
+    <string name="task_completed">Task completed</string>
+    <string name="task_deleted">Task deleted</string>
 </resources>

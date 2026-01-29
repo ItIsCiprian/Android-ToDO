@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_checked="true">
+        <layer-list>
+            <item>
+                <shape android:shape="oval">
+                    <solid android:color="@color/task_completed_bg" />
+                    <size android:width="24dp" android:height="24dp" />
+                </shape>
+            </item>
+            <item android:gravity="center">
+                <vector
+                    android:width="16dp"
+                    android:height="16dp"
+                    android:viewportWidth="24"
+                    android:viewportHeight="24">
+                    <path
+                        android:fillColor="@color/task_priority_low"
+                        android:pathData="M9,16.17L4.83,12L3.41,13.41L9,19L21,7L19.59,5.59L9,16.17Z" />
+                </vector>
+            </item>
+        </layer-list>
+    </item>
+    <item>
+        <shape android:shape="oval">
+            <stroke
+                android:width="2dp"
+                android:color="@color/divider" />
+            <size android:width="24dp" android:height="24dp" />
+        </shape>
+    </item>
+</selector>

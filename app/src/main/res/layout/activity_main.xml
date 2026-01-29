@@ -1,68 +1,106 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout 
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp"
+    android:background="@color/background"
     tools:context=".MainActivity">
 
-    <TextView
+    <!-- Header with app title -->
+    <com.google.android.material.appbar.AppBarLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Todo List"
-        android:textSize="24sp"
-        android:textStyle="bold"
-        android:gravity="center"
-        android:layout_marginBottom="20dp"
-        android:textColor="@android:color/black" />
+        android:background="@color/surface"
+        android:elevation="@dimen/elevation_small">
 
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/spacing_lg">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/task_list_title"
+                android:textSize="@dimen/font_size_headline"
+                android:textStyle="bold"
+                android:textColor="@color/on_background"
+                android:fontFamily="sans-serif-medium" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/instructions"
+                android:textSize="@dimen/font_size_small"
+                android:textColor="@color/task_completed_text"
+                android:layout_marginTop="@dimen/spacing_xs" />
+
+        </LinearLayout>
+
+    </com.google.android.material.appbar.AppBarLayout>
+
+    <!-- Task input area -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:layout_marginBottom="16dp">
+        android:layout_marginTop="@dimen/spacing_lg"
+        android:layout_marginHorizontal="@dimen/spacing_md"
+        android:gravity="center_vertical">
 
         <EditText
             android:id="@+id/editTextTask"
             android:layout_width="0dp"
-            android:layout_height="wrap_content"
+            android:layout_height="@dimen/input_field_height"
             android:layout_weight="1"
-            android:hint="Enter a new task"
+            android:hint="@string/enter_task_hint"
             android:inputType="textCapSentences"
-            android:padding="12dp"
-            android:background="@android:drawable/edit_text"
-            android:layout_marginEnd="8dp" />
+            android:paddingHorizontal="@dimen/spacing_md"
+            android:background="@drawable/bg_input_field"
+            android:layout_marginEnd="@dimen/spacing_sm"
+            android:textColor="@color/on_surface"
+            android:textColorHint="@color/task_completed_text"
+            android:textSize="@dimen/font_size_body" />
 
-        <Button
+        <com.google.android.material.button.MaterialButton
             android:id="@+id/buttonAddTask"
             android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Add"
-            android:minWidth="80dp"
-            android:background="@android:color/holo_blue_light"
-            android:textColor="@android:color/white" />
+            android:layout_height="@dimen/input_field_height"
+            android:text="@string/add_task"
+            android:backgroundTint="@color/primary"
+            android:textColor="@color/on_primary"
+            android:cornerRadius="@dimen/corner_radius_small"
+            android:textSize="@dimen/font_size_body"
+            android:paddingHorizontal="@dimen/spacing_lg"
+            style="@style/Widget.Material3.Button" />
 
     </LinearLayout>
 
-    <ListView
+    <!-- Task list -->
+    <androidx.recyclerview.widget.RecyclerView
         android:id="@+id/listViewTasks"
         android:layout_width="match_parent"
-        android:layout_height="0dp"
-        android:layout_weight="1"
-        android:divider="@android:color/darker_gray"
-        android:dividerHeight="1dp"
-        android:padding="8dp"
-        android:background="@android:drawable/edit_text" />
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/spacing_lg"
+        android:layout_marginHorizontal="@dimen/spacing_md"
+        android:layout_marginBottom="@dimen/spacing_xxl"
+        android:clipToPadding="false"
+        android:paddingTop="@dimen/spacing_sm"
+        tools:listitem="@layout/task_item" />
 
-    <TextView
-        android:layout_width="match_parent"
+    <!-- Floating Action Button -->
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/fabAddTask"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Tap to complete • Long press to delete"
-        android:textSize="12sp"
-        android:gravity="center"
-        android:layout_marginTop="8dp"
-        android:textColor="@android:color/darker_gray" />
+        android:layout_gravity="bottom|end"
+        android:layout_margin="@dimen/fab_margin"
+        android:src="@android:drawable/ic_input_add"
+        app:tint="@color/on_primary"
+        app:backgroundTint="@color/primary"
+        app:elevation="@dimen/elevation_medium" />
 
-</LinearLayout>
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

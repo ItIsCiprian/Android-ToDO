@@ -5,12 +5,15 @@ import android.content.SharedPreferences;
 import android.os.Bundle;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
+
 import android.view.View;
-import android.widget.AdapterView;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ListView;
 import android.widget.Toast;
+
+import com.google.android.material.button.MaterialButton;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -23,8 +26,9 @@ public class MainActivity extends AppCompatActivity {
     private static final String KEY_TASKS_JSON = "tasks_json";
 
     private EditText editTextTask;
-    private Button buttonAddTask;
-    private ListView listViewTasks;
+    private MaterialButton buttonAddTask;
+    private FloatingActionButton fabAddTask;
+    private RecyclerView recyclerViewTasks;
 
     private final ArrayList<TaskItem> tasksList = new ArrayList<>();
     private TaskAdapter tasksAdapter;
@@ -38,46 +42,78 @@ public class MainActivity extends AppCompatActivity {
 
         prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
 
+        initializeViews();
+        setupRecyclerView();
+        setupClickListeners();
+        loadTasks();
+    }
+
+    private void initializeViews() {
         editTextTask = findViewById(R.id.editTextTask);
         buttonAddTask = findViewById(R.id.buttonAddTask);
-        listViewTasks = findViewById(R.id.listViewTasks);
+        fabAddTask = findViewById(R.id.fabAddTask);
+        recyclerViewTasks = findViewById(R.id.listViewTasks);
+    }
 
+    private void setupRecyclerView() {
         tasksAdapter = new TaskAdapter(this, tasksList);
-        listViewTasks.setAdapter(tasksAdapter);
+        recyclerViewTasks.setLayoutManager(new LinearLayoutManager(this));
+        recyclerViewTasks.setAdapter(tasksAdapter);
 
-        listViewTasks.setOnItemClickListener(this::onToggleTask);
-        listViewTasks.setOnItemLongClickListener(this::onRemoveTask);
+        tasksAdapter.setOnItemClickListener(new TaskAdapter.OnItemClickListener() {
+            @Override
+            public void onItemClick(int position) {
+                onToggleTask(position);
+            }
 
+            @Override
+            public void onItemLongClick(int position) {
+                onRemoveTask(position);
+            }
+        });
+    }
+
+    private void setupClickListeners() {
         buttonAddTask.setOnClickListener(this::onAddTaskClicked);
-
-        loadTasks();
+        fabAddTask.setOnClickListener(this::onAddTaskClicked);
+        
+        // Also add task when user presses "Done" on keyboard
+        editTextTask.setOnEditorActionListener((v, actionId, event) -> {
+            onAddTaskClicked(v);
+            return true;
+        });
     }
 
     public void onAddTaskClicked(View view) {
         final String raw = editTextTask.getText().toString();
         final String taskName = raw == null ? "" : raw.trim();
         if (taskName.isEmpty()) {
-            Toast.makeText(this, "Please enter a task", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, R.string.empty_task_message, Toast.LENGTH_SHORT).show();
             return;
         }
+        
+        // Add task with animation
+        int position = tasksList.size();
         tasksList.add(new TaskItem(taskName, false));
-        tasksAdapter.notifyDataSetChanged();
+        tasksAdapter.notifyItemInserted(position);
+        
+        // Clear input and scroll to new item
         editTextTask.setText("");
+        recyclerViewTasks.scrollToPosition(position);
         saveTasks();
     }
 
-    private void onToggleTask(AdapterView<?> parent, View item, int position, long id) {
+    private void onToggleTask(int position) {
         TaskItem task = tasksList.get(position);
         task.toggleCompleted();
-        tasksAdapter.notifyDataSetChanged();
+        tasksAdapter.notifyItemChanged(position);
         saveTasks();
     }
 
-    private boolean onRemoveTask(AdapterView<?> parent, View view, int position, long id) {
+    private void onRemoveTask(int position) {
         tasksList.remove(position);
-        tasksAdapter.notifyDataSetChanged();
+        tasksAdapter.notifyItemRemoved(position);
         saveTasks();
-        return true;
     }
 
     private void saveTasks() {
