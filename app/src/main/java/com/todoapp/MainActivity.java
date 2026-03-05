@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.view.View;
 import android.widget.EditText;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.button.MaterialButton;
@@ -29,6 +30,7 @@ public class MainActivity extends AppCompatActivity {
     private MaterialButton buttonAddTask;
     private FloatingActionButton fabAddTask;
     private RecyclerView recyclerViewTasks;
+    private TextView summaryTextView;
 
     private final ArrayList<TaskItem> tasksList = new ArrayList<>();
     private TaskAdapter tasksAdapter;
@@ -46,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
         setupRecyclerView();
         setupClickListeners();
         loadTasks();
+        updateSummary();
     }
 
     private void initializeViews() {
@@ -53,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
         buttonAddTask = findViewById(R.id.buttonAddTask);
         fabAddTask = findViewById(R.id.fabAddTask);
         recyclerViewTasks = findViewById(R.id.listViewTasks);
+        summaryTextView = findViewById(R.id.textViewSummary);
     }
 
     private void setupRecyclerView() {
@@ -92,28 +96,33 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
         
-        // Add task with animation
-        int position = tasksList.size();
+        // Add task and re-sort to keep high-priority, incomplete tasks at the top
         tasksList.add(new TaskItem(taskName, false));
-        tasksAdapter.notifyItemInserted(position);
-        
-        // Clear input and scroll to new item
+        resortTasks();
+        tasksAdapter.notifyDataSetChanged();
+
+        // Clear input and scroll to the top where the most relevant tasks are
         editTextTask.setText("");
-        recyclerViewTasks.scrollToPosition(position);
+        recyclerViewTasks.scrollToPosition(0);
         saveTasks();
+        updateSummary();
     }
 
     private void onToggleTask(int position) {
         TaskItem task = tasksList.get(position);
         task.toggleCompleted();
-        tasksAdapter.notifyItemChanged(position);
+        resortTasks();
+        tasksAdapter.notifyDataSetChanged();
         saveTasks();
+        updateSummary();
     }
 
     private void onRemoveTask(int position) {
         tasksList.remove(position);
-        tasksAdapter.notifyItemRemoved(position);
+        resortTasks();
+        tasksAdapter.notifyDataSetChanged();
         saveTasks();
+        updateSummary();
     }
 
     private void saveTasks() {
@@ -139,6 +148,42 @@ public class MainActivity extends AppCompatActivity {
         } catch (JSONException e) {
             prefs.edit().remove(KEY_TASKS_JSON).apply();
         }
+        resortTasks();
         tasksAdapter.notifyDataSetChanged();
+        updateSummary();
+    }
+
+    private void updateSummary() {
+        if (summaryTextView == null) {
+            return;
+        }
+        int total = tasksList.size();
+        if (total == 0) {
+            summaryTextView.setText(R.string.no_tasks);
+            return;
+        }
+        int completed = 0;
+        for (TaskItem task : tasksList) {
+            if (task.isCompleted()) {
+                completed++;
+            }
+        }
+        String summary = getString(R.string.summary_format, completed, total);
+        summaryTextView.setText(summary);
+    }
+
+    private void resortTasks() {
+        java.util.Collections.sort(tasksList, (a, b) -> {
+            // Incomplete tasks first
+            if (a.isCompleted() != b.isCompleted()) {
+                return a.isCompleted() ? 1 : -1;
+            }
+            // Higher priority first
+            if (a.getPriority() != b.getPriority()) {
+                return Integer.compare(b.getPriority(), a.getPriority());
+            }
+            // Fallback: alphabetical
+            return a.getTaskName().compareToIgnoreCase(b.getTaskName());
+        });
     }
 }

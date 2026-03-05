@@ -8,4 +8,5 @@
     <string name="no_tasks">No tasks yet. Add one above!</string>
     <string name="task_completed">Task completed</string>
     <string name="task_deleted">Task deleted</string>
+    <string name="summary_format">%1$d of %2$d tasks completed</string>
 </resources>

@@ -1,2 +1,18 @@
-
 /todo_app/
+
+# Android/Gradle build artifacts
+/.gradle/
+/build/
+/app/build/
+
+# Local Android SDK (never commit toolchains or platform files)
+/android-sdk/
+
+# IDE files (Android Studio / IntelliJ / Eclipse)
+/.idea/
+*.iml
+/.project
+/.settings/
+/app/.project
+/app/.classpath
+/app/.settings/
