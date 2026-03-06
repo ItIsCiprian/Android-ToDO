@@ -7,6 +7,8 @@
 
 # Local Android SDK (never commit toolchains or platform files)
 /android-sdk/
+commandlinertools-linux.zip
+/latest/
 
 # IDE files (Android Studio / IntelliJ / Eclipse)
 /.idea/
