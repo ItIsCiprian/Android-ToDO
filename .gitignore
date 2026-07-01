@@ -1,9 +1,10 @@
 /todo_app/
 
 # Android/Gradle build artifacts
-/.gradle/
+.gradle/
 /build/
 /app/build/
+*.lock
 
 # Local Android SDK (never commit toolchains or platform files)
 /android-sdk/
@@ -13,8 +14,12 @@ commandlinertools-linux.zip
 # IDE files (Android Studio / IntelliJ / Eclipse)
 /.idea/
 *.iml
-/.project
-/.settings/
+.project
+.settings/
 /app/.project
 /app/.classpath
 /app/.settings/
+
+# macOS metadata
+.DS_Store
+__MACOSX/
