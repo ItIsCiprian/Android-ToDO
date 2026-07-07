@@ -73,7 +73,7 @@
             android:text="@string/add_task"
             android:backgroundTint="@color/primary"
             android:textColor="@color/on_primary"
-            android:cornerRadius="@dimen/corner_radius_small"
+            app:cornerRadius="@dimen/corner_radius_small"
             android:textSize="@dimen/font_size_body"
             android:paddingHorizontal="@dimen/spacing_lg"
             style="@style/Widget.Material3.Button" />
